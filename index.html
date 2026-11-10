@@ -82,8 +82,10 @@ input,select{width:100%;margin-top:4px;padding:9px 10px;font:inherit;color:var(-
 <script>
 const DAYS=['월','화','수','목','금','토','일'],H0=7,H1=24,HH=52,KEY='timetable-v1';
 let items=[],editId=null,color=1;
-try{items=JSON.parse(localStorage.getItem(KEY)||'[]')||[]}catch(e){items=[]}
-if(!items.length)items=[
+let saved=null;
+try{saved=localStorage.getItem(KEY)}catch(e){}
+try{items=saved?JSON.parse(saved):null}catch(e){items=null}
+if(!Array.isArray(items))items=[
  {id:1,name:'자료구조',place:'공학관 302',day:0,s:600,e:690,c:1},
  {id:2,name:'영어회화',place:'외국어관 105',day:1,s:540,e:630,c:3},
  {id:3,name:'선형대수',place:'자연관 201',day:2,s:780,e:870,c:5}];
