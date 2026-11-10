@@ -49,6 +49,18 @@ input,select{width:100%;margin-top:4px;padding:9px 10px;font:inherit;color:var(-
 .sw button[aria-pressed="true"]{border-color:var(--ink)}
 .acts{display:flex;gap:8px;margin-top:20px;justify-content:flex-end}
 .err{color:var(--now);font-size:13px;min-height:18px;margin-top:8px}
+button.dayh{background:none;border:0;border-bottom:1px solid var(--line);font:inherit;color:var(--sub);cursor:pointer;width:100%}
+.dayh.focus{display:flex;align-items:center;justify-content:center;gap:10px}
+.dayh.focus button{background:none;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:2px 10px;font-size:13px}
+.grid.focus{min-width:0}
+@media (max-width:640px){
+.wrap{padding:16px 8px 32px}
+.grid:not(.focus){min-width:0;grid-template-columns:32px repeat(7,1fr)}
+.grid:not(.focus) .dayh{font-size:12px}
+.grid:not(.focus) .times span{right:4px;font-size:10px}
+.grid:not(.focus) .blk{left:1px;right:1px;padding:3px 4px;font-size:10px;border-radius:6px;overflow-wrap:anywhere}
+.grid:not(.focus) .blk small{display:none}
+}
 </style>
 </head>
 <body>
@@ -58,7 +70,7 @@ input,select{width:100%;margin-top:4px;padding:9px 10px;font:inherit;color:var(-
     <button class="btn" id="add">수업 추가</button>
   </header>
   <div class="card"><div class="grid" id="grid"></div></div>
-  <p class="hint">빈 칸을 누르면 그 시간에 수업을 추가하고, 수업을 누르면 수정할 수 있어요.</p>
+  <p class="hint">빈 칸을 누르면 수업을 추가하고, 수업을 누르면 수정할 수 있어요. 요일 이름을 누르면 그 날만 크게 볼 수 있어요.</p>
 </div>
 
 <dialog id="dlg">
@@ -81,7 +93,7 @@ input,select{width:100%;margin-top:4px;padding:9px 10px;font:inherit;color:var(-
 
 <script>
 const DAYS=['월','화','수','목','금','토','일'],H0=7,H1=24,HH=52,KEY='timetable-v1';
-let items=[],editId=null,color=1;
+let items=[],editId=null,color=1,focusDay=null;
 let saved=null;
 try{saved=localStorage.getItem(KEY)}catch(e){}
 try{items=saved?JSON.parse(saved):null}catch(e){items=null}
@@ -95,14 +107,19 @@ const fmt=m=>String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(
 const y=m=>(m-H0*60)/60*HH;
 
 function build(){
-  const g=$('grid');g.innerHTML='';
+  const g=$('grid');g.innerHTML='';g.classList.toggle('focus',focusDay!==null);g.style.gridTemplateColumns=focusDay!==null?'48px 1fr':'';
   const today=(new Date().getDay()+6)%7;
   g.appendChild(Object.assign(document.createElement('div'),{className:'dayh'}));
-  DAYS.forEach((d,i)=>{const h=document.createElement('div');h.className='dayh'+(i===today?' today':'');h.textContent=d;g.appendChild(h)});
+  if(focusDay!==null){const h=document.createElement('div');h.className='dayh focus'+(focusDay===today?' today':'');
+    const mk=(t,f,l)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.setAttribute('aria-label',l);b.onclick=f;return b};
+    const lb=document.createElement('b');lb.textContent=DAYS[focusDay]+'요일';
+    h.append(mk('‹',()=>{focusDay=(focusDay+6)%7;build()},'이전 요일'),lb,mk('›',()=>{focusDay=(focusDay+1)%7;build()},'다음 요일'),mk('전체 보기',()=>{focusDay=null;build()},'전체 보기'));g.appendChild(h)}
+  else DAYS.forEach((d,i)=>{const h=document.createElement('button');h.type='button';h.className='dayh'+(i===today?' today':'');h.textContent=d;h.setAttribute('aria-label',d+'요일만 크게 보기');h.onclick=()=>{focusDay=i;build()};g.appendChild(h)});
   const t=document.createElement('div');t.className='times';t.style.height=(H1-H0)*HH+'px';
   for(let h=H0;h<H1;h++){const s=document.createElement('span');s.style.top=(h-H0)*HH+'px';s.textContent=h;if(h>H0)t.appendChild(s)}
   g.appendChild(t);
   DAYS.forEach((d,i)=>{
+    if(focusDay!==null&&i!==focusDay)return;
     const c=document.createElement('div');c.className='col'+(i===today?' today':'');c.style.height=(H1-H0)*HH+'px';
     for(let h=H0+1;h<H1;h++){const l=document.createElement('div');l.className='hl';l.style.top=(h-H0)*HH+'px';c.appendChild(l)}
     c.addEventListener('click',ev=>{
